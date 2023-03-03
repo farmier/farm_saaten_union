@@ -8,3 +8,5 @@ dependencies:
   - farm_input
   - farm_plant
   - farm_equipment
+  - farm_quantity_material
+  - farm_material
