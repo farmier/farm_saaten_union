@@ -10,3 +10,5 @@ dependencies:
   - farm_equipment
   - farm_quantity_material
   - farm_material
+  - farm_inventory
+
