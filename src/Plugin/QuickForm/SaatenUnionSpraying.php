@@ -8,7 +8,6 @@ use Drupal\farm_quick\Traits\QuickLogTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 
 /**
  * Saaten Union Spraying Quick Form.
@@ -33,13 +32,6 @@ class SaatenUnionSpraying extends QuickFormBase {
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
-
-  /**
-   * The logger service.
-   *
-   * @var \Psr\Log\LoggerInterface
-   */
-  protected $logger;
   
   /**
    * Constructs a QuickFormBase object.
@@ -54,13 +46,10 @@ class SaatenUnionSpraying extends QuickFormBase {
    *   The messenger service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager service.
-   * @param \Psr\Log\LoggerInterface $logger
-   *   The logger service.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, MessengerInterface $messenger, EntityTypeManagerInterface $entity_type_manager, LoggerInterface $logger) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, MessengerInterface $messenger, EntityTypeManagerInterface $entity_type_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $messenger);
     $this->entityTypeManager = $entity_type_manager;
-    $this->logger = $logger;
   }
 
   /**
@@ -73,111 +62,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       $plugin_definition,
       $container->get('messenger'),
       $container->get('entity_type.manager'),
-      $container->get('logger'),
     );
-  }
-
-/**
- * Retrieves a sorted list of active, non-admin user labels.
- *
- * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
- *   The entity type manager.
- *
- * @return array
- *   An array of user labels indexed by user ID and sorted alphabetically.
- */
-  protected function getUserOptions(EntityTypeManagerInterface $entityTypeManager): array {
-    // Query active, non-admin users.
-    $userQuery = $entityTypeManager->getStorage('user')->getQuery();
-    $userQuery->accessCheck(TRUE);
-    $userQuery->condition('status', 1);
-    $userQuery->condition('uid', '1', '>');
-  
-    // Load users.
-    $userIds = $userQuery->execute();
-    $users = $entityTypeManager->getStorage('user')->loadMultiple($userIds);
-  
-    // Build user options.
-    $options = [];
-    foreach ($users as $user) {
-      $options[$user->id()] = $user->label();
-    }
-    asort($options);
-  
-    return $options;
-  }
-  
-/**
-  * Helper function to get the labels of active equipment assets, sorted alphabetically.
-  *
-  * @return string[]
-  *   An array of equipment labels indexed by asset id and sorted alphabetically.
-  */
-protected function getActiveEquipmentLabels(): array {
-  try {
-    // Query active equipment assets.
-    $asset_storage = $this->entityTypeManager->getStorage('asset');
-    $asset_ids = $asset_storage->getQuery()
-      ->accessCheck(TRUE)
-      ->condition('status', 'active')
-      ->condition('type', 'equipment')
-      ->execute();
-
-    // Load equipment assets.
-    $equipments = $asset_storage->loadMultiple($asset_ids);
-
-    // Build equipment options.
-    $equipment_labels = array_map(function ($equipment) {
-      return $equipment->label();
-    }, $equipments);
-    natcasesort($equipment_labels);
-
-    return $equipment_labels;
-  } catch (\Exception $e) {
-    // Log the error and return an empty array.
-    $this->logger->error('Failed to load equipment assets: @message', [
-      '@message' => $e->getMessage(),
-    ]);
-    return [];
-  }
-}
-
-  /**
-   * Helper function to get the labels of active material assets, sorted alphabetically.
-   *
-   * @return string[]
-   *   An array of material labels indexed by asset id and sorted alphabetically.
-   */
-  protected function getMaterials(): array {
-    try {
-      // Get the entity storage for the 'asset' entity type.
-      $asset_storage = $this->entityTypeManager->getStorage('asset');
-
-      // Query the database for active materials.
-      $asset_query = $asset_storage->getQuery()
-        ->accessCheck(TRUE) // Check the user's access to the materials.
-        ->condition('status', 'active')
-        ->condition('type', 'material');
-      $asset_ids = $asset_query->execute(); // Execute the query and get the asset IDs.
-
-      // Load the materials and build an array of options.
-      $options = [];
-      if (!empty($asset_ids)) {
-        $materials = $asset_storage->loadMultiple($asset_ids);
-        foreach ($materials as $material) {
-          $options[$material->id()] = $material->label();
-        }
-        asort($options);
-      }
-
-      return $options;
-    } catch (\Exception $e) {
-      // Log the error and return an empty array.
-      $this->logger->error('Failed to load material assets: @message', [
-        '@message' => $e->getMessage(),
-      ]);
-      return [];
-    }
   }
 
   /**
@@ -230,7 +115,7 @@ protected function getActiveEquipmentLabels(): array {
     ];
 
     // Users to assign.
-    $users = $this->getUserOptions($this->entityTypeManager);
+    $users = $this->getUserOptions();
     $form['assigned_to'] = [
       '#type' => 'select',
       '#title' => $this->t('Assigned to'),
@@ -248,49 +133,70 @@ protected function getActiveEquipmentLabels(): array {
       '#required' => TRUE,
       '#description' => $this->t('The product used.'),
     ];
-    
-    $form['product_rate'] = [
-      '#type' => 'entity_autocomplete',
-      '#title' => $this->t('Product Rate'),
-      '#description' => $this->t('The rate the product is applied per unit area.'),
-      '#target_type' => 'material_type',
-      '#required' => TRUE,
-    ];
 
-    $form['total_product_quantity'] = [
-      '#type' => 'entity_autocomplete',
-      '#title' => $this->t('Total Product Quantity'),
-      '#description' => $this->t('The total amount of product required to cover the field area(s).'),
-      '#target_type' => 'material',
-      '#selection_settings' => [
-        'target_bundles' => ['assets' => 'material'],
-      ],
-      '#required' => TRUE,
+    // Product units
+    $product_units_options = [
+      'l' => 'l',
+      'kg/ha' => 'kg/ha',
+      'ml' => 'ml'
     ];
+    $form['product_rate'] = $this->buildQuantityField([
+      'title' => $this->t('Product Rate'),
+      'description' => $this->t('The rate the product is applied per unit area.'),
+      'required' => TRUE,
+      'type' => ['#value' => 'material'],
+      'measure' => ['#value' => 'rate'],
+      'units' => ['#options' => $product_units_options],
+    ]);
 
-    $form['water_volume'] = [
-      '#type' => 'number',
-      'title' => $this->t('Water Volume'),
-        '#required' => TRUE,
-        'description' => $this->t('If the full tank used enter zero. If not, estimate or calculate the remaining.'),
-        'measure' => ['#value' => 'volume'],
-        'units' => ['#options' => ['l' => 'l','gal' => 'gal']],
+    $form['total_product_quantity'] = $this->buildQuantityField([
+      'title' => $this->t('Total Product Quantity'),
+      'description' => $this->t('The total amount of product required to cover the field area(s).'),
+      'required' => TRUE,
+      'type' => ['#value' => 'material'],
+      'measure' => ['#value' => 'rate'],
+      'units' => ['#options' => $product_units_options],
+    ]);
+
+    // Tank volume remaining.
+    $tank_volume_ramaining_units_options = [
+      'l' => 'l',
+      'gal' => 'gal',
     ];
+    $tank_volume_remaining = [
+      'title' => $this->t('Tank volume remaining'),
+      'description' => $this->t('If the full tank used enter zero. If not, estimate or calculate the remaining.'),
+      'measure' => ['#value' => 'volume'],
+      'units' => ['#options' => $tank_volume_ramaining_units_options],
+    ];
+    $form['water_volume']  = $this->buildQuantityField($tank_volume_remaining);
 
-    $form['area'] = [
-      'title' => $this->t('Area'),
+    // Area sprayed.
+    $area_sprayed_units_options = [
+      'm2' => 'm2',
+      'ha' => 'ha',
+    ];
+    $area_sprayed = [
+      'title' => $this->t('Area sprayed'),
       'description' => $this->t('The total area being sprayed.'),
       'measure' => ['#value' => 'area'],
-      'units' => ['#options' => ['m2' => 'm2', 'ha' => 'ha']],
+      'units' => ['#options' => $area_sprayed_units_options],
     ];
+    $form['area'] = $this->buildQuantityField($area_sprayed);
 
-    $form['wind_speed'] = [
-      'title' => $this->t('Wind Speed'),
-      '#required' => TRUE,
+    // Wind speed.
+    $wind_speed_units_options = [
+      'kph' => 'kph',
+      'mph' => 'mph',
+    ];
+    $wind_speed = [
+      'title' => $this->t('Wind speed'),
       'description' => $this->t('The maximum wind speed during spraying.'),
       'measure' => ['#value' => 'ratio'],
-      'units' => ['#options' => ['kph' => 'kph', 'mph' => 'mph']],
+      'units' => ['#options' => $wind_speed_units_options],
+      'required' => TRUE,
     ];
+    $form['wind_speed'] = $this->buildQuantityField($wind_speed);
 
     // Wind direction.
     $wind_directions = [
@@ -313,14 +219,13 @@ protected function getActiveEquipmentLabels(): array {
       '#required' => TRUE,
     ];
 
-      // Temperature (Degrees C).
-    // $form['temperature'] = [
-    //   'title' => $this->t('Temperature (C)'),
-    //   'description' => $this->t('The average temperature during spraying.'),
-    //   'measure' => ['#value' => 'temperature'],
-    //   'units' => ['#value' => 'C'],
-    //   'required' => TRUE,
-    // ];
+    $form['temperature'] = $this->buildQuantityField([
+      'title' => $this->t('Temperature (C)'),
+      'description' => $this->t('The average temperature during spraying.'),
+      'measure' => ['#value' => 'temperature'],
+      'units' => ['#value' => 'C'],
+      'required' => TRUE,
+    ]);
 
     // Weather types.
     $weather_types = [
@@ -346,16 +251,14 @@ protected function getActiveEquipmentLabels(): array {
       '#required' => TRUE,
     ];
 
-    // $form['pressure'] = [
-    //   '#type' => 'number',
-    //   'title' => $this->t('Pressure'),
-    //   'description' => $this->t('The water pressure used when applying the product, where relevant.'),
-    //   'measure' => ['#value' => 'pressure'],
-    //   'units' => ['#value' => 'bar'],
-    // ];
+    $form['pressure'] = $this->buildQuantityField([
+      'title' => $this->t('Pressure'),
+      'description' => $this->t('The water pressure used when applying the product, where relevant.'),
+      'measure' => ['#value' => 'pressure'],
+      'units' => ['#value' => 'bar'],
+    ]);
 
     $equipments = $this->getActiveEquipmentLabels();
-
     $form['equipment'] = [
       '#type' => 'select',
       '#title' => $this->t('Equipment'),
@@ -400,6 +303,14 @@ protected function getActiveEquipmentLabels(): array {
       '#return_value' => 'Yes',
     ];
 
+    // Log notes.
+    $form['notes'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Notes'),
+      '#description' => $this->t('Any additional notes.'),
+      '#weight' => 20,
+    ];
+    
     return $form;
   }
 
@@ -408,20 +319,245 @@ protected function getActiveEquipmentLabels(): array {
   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
-    // Create a new log entity.
-    $log = $this->createLog([
+  // Input log entity.
+  $this->createLog([
       'type' => "input",
       'name' => $form_state->getValue('log_name'),
       'timestamp' =>  $form_state->getValue('date_start'),
       'status' => $form_state->getValue('status'),
       'flag' => $form_state->getValue('flag'),
     ]);
+    
+  }
 
-    // Save the log entity.
-    $log->save();
+/**
+ * Retrieves a sorted list of active, non-admin user labels.
+ *
+ * @return array
+ *   An array of user labels indexed by user ID and sorted alphabetically.
+ */
+protected function getUserOptions(): array {
+  // Query active, non-admin users.
+  $userQuery = $this->entityTypeManager->getStorage('user')->getQuery();
+  $userQuery->accessCheck(TRUE);
+  $userQuery->condition('status', 1);
+  $userQuery->condition('uid', '1', '>');
 
-    // Display a success message.
-    $this->messenger()->addMessage($this->t('The spraying log has been saved.'));
+  // Load users.
+  $userIds = $userQuery->execute();
+  $users = $this->entityTypeManager->getStorage('user')->loadMultiple($userIds);
+
+  // Build user options.
+  $options = [];
+  foreach ($users as $user) {
+    $options[$user->id()] = $user->label();
+  }
+  asort($options);
+
+  return $options;
+}
+
+/**
+* Helper function to get the labels of active equipment assets, sorted alphabetically.
+*
+* @return string[]
+*   An array of equipment labels indexed by asset id and sorted alphabetically.
+*/
+protected function getActiveEquipmentLabels(): array {
+  // Query active equipment assets.
+  $asset_storage = $this->entityTypeManager->getStorage('asset');
+  $asset_ids = $asset_storage->getQuery()
+    ->accessCheck(TRUE)
+    ->condition('status', 'active')
+    ->condition('type', 'equipment')
+    ->execute();
+
+  // Load equipment assets.
+  $equipments = $asset_storage->loadMultiple($asset_ids);
+
+  // Build equipment options.
+  $equipment_labels = array_map(function ($equipment) {
+    return $equipment->label();
+  }, $equipments);
+  natcasesort($equipment_labels);
+
+  return $equipment_labels;
+}
+
+/**
+ * Helper function to get the labels of active material assets, sorted alphabetically.
+ *
+ * @return string[]
+ *   An array of material labels indexed by asset id and sorted alphabetically.
+ */
+protected function getMaterials(): array {
+    // Get the entity storage for the 'asset' entity type.
+    $asset_storage = $this->entityTypeManager->getStorage('asset');
+
+    // Query the database for active materials.
+    $asset_query = $asset_storage->getQuery()
+      ->accessCheck(TRUE) // Check the user's access to the materials.
+      ->condition('status', 'active')
+      ->condition('type', 'material');
+    $asset_ids = $asset_query->execute(); // Execute the query and get the asset IDs.
+
+    // Load the materials and build an array of options.
+    $options = [];
+    if (!empty($asset_ids)) {
+      $materials = $asset_storage->loadMultiple($asset_ids);
+      foreach ($materials as $material) {
+        $options[$material->id()] = $material->label();
+      }
+      asort($options);
+    }
+
+    return $options;
+  }
+
+  /**
+   * Helper function to build a render array for a quantity field.
+   *
+   * @param array $config
+   *   Configuration for the quantity field.
+   *
+   * @return array
+   *   Render array for the quantity field.
+   */
+  public function buildQuantityField(array $config = []) {
+
+    // Default the label to the fieldset title.
+    if (!empty($config['title']) && empty($config['label'])) {
+      $config['label']['#value'] = (string) $config['title'];
+    }
+
+    // Auto-hide fields if #value is provided and no #type is specified.
+    foreach (['measure', 'value', 'units', 'label'] as $field_name) {
+      if (isset($config[$field_name]['#value']) && !isset($config[$field_name]['#type'])) {
+        $config[$field_name]['#type'] = 'hidden';
+      }
+    }
+
+    // Auto-populate the unit #options if the #value is specified.
+    if (isset($config['units']['#value']) && empty($config['units']['#options'])) {
+      $default_unit = $config['units']['#value'];
+      $config['units']['#options'] = [$default_unit => $default_unit];
+    }
+
+    // Default config.
+    $default_config = [
+      'border' => FALSE,
+      'type' => [
+        '#type' => 'hidden',
+        '#value' => 'standard',
+      ],
+      'measure' => [
+        '#type' => 'select',
+        '#title' => $this->t('Measure'),
+        '#options' => quantity_measure_options(),
+        '#weight' => 0,
+      ],
+      'value' => [
+        '#type' => 'number',
+        '#weight' => 5,
+        '#min' => 0,
+        '#step' => 0.01,
+      ],
+      'units' => [
+        '#weight' => 10,
+      ],
+      'label' => [
+        '#type' => 'textfield',
+        '#title' => $this->t('Label'),
+        '#weight' => 15,
+        '#size' => 15,
+      ],
+    ];
+    $config = array_replace_recursive($default_config, $config);
+
+    // Start a render array with a fieldset.
+    $render = [
+      '#type' => 'fieldset',
+      '#tree' => TRUE,
+      '#theme_wrappers' => ['fieldset'],
+      '#attributes' => [
+        'class' => ['inline-quantity', 'container-inline'],
+      ],
+      '#attached' => [
+        'library' => ['farm_rothamsted_quick/quantity_fieldset'],
+      ],
+    ];
+
+    // Configure the top level fieldset.
+    foreach (['title', 'description'] as $key) {
+      if (!empty($config[$key])) {
+        $render["#$key"] = $config[$key];
+      }
+    }
+
+    // Include each quantity subfield.
+    $render['type'] = $config['type'];
+    $render['measure'] = $config['measure'];
+    $render['value'] = $config['value'];
+    $render['label'] = $config['label'];
+
+    // Save units to a variable for now.
+    // The key may be saved as units or units_id.
+    $units_key_name = 'units';
+    $units = $config['units'];
+
+    // Check if unit options are provided.
+    if (!empty($units['#options'])) {
+      $units_options = $units['#options'];
+
+      // If a numeric value is provided, assume these are term ids.
+      if (is_numeric(key($units_options))) {
+        $units_key_name = 'units_id';
+      }
+
+      // Render the units as select options.
+      $units += [
+        '#type' => 'select',
+        '#options' => $units_options,
+      ];
+
+      // If the unit value is hard-coded add a field suffix to the value field
+      // with the first option label.
+      if (isset($units['#value'])) {
+        $render['value']['#field_suffix'] = current($units_options);
+      }
+    }
+    // Else default to entity_autocomplete unit terms. Use the units_id key.
+    else {
+      $units_key_name = 'units_id';
+      // Add entity_autocomplete.
+      $units += [
+        '#type' => 'entity_autocomplete',
+        '#placeholder' => $this->t('Units'),
+        '#target_type' => 'taxonomy_term',
+        '#selection_handler' => 'default',
+        '#selection_settings' => [
+          'target_bundles' => ['unit'],
+        ],
+        '#tags' => FALSE,
+        '#size' => 15,
+      ];
+    }
+
+    // Include units in render array.
+    $render[$units_key_name] = $units;
+
+    // Check if the quantity is required.
+    if (!empty($config['required'])) {
+      $render['#required'] = TRUE;
+      $render['value']['#required'] = TRUE;
+    }
+
+    // Remove the border if needed.
+    if (empty($config['border'])) {
+      $render['#attributes']['class'][] = 'no-border';
+    }
+
+    return $render;
   }
 
 }
