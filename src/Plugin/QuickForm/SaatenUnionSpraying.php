@@ -158,18 +158,18 @@ class SaatenUnionSpraying extends QuickFormBase {
       'units' => ['#options' => $product_units_options],
     ]);
 
-    // Tank volume remaining.
-    $tank_volume_ramaining_units_options = [
+    // Water Volume remaining.
+    $water_volume_units_options = [
       'l' => 'l',
       'gal' => 'gal',
     ];
-    $tank_volume_remaining = [
-      'title' => $this->t('Tank volume remaining'),
-      'description' => $this->t('If the full tank used enter zero. If not, estimate or calculate the remaining.'),
+    $water_volume_remaining = [
+      'title' => $this->t('Water Volume'),
+      'description' => $this->t('The total amount of water required to cover the field area(s).'),
       'measure' => ['#value' => 'volume'],
-      'units' => ['#options' => $tank_volume_ramaining_units_options],
+      'units' => ['#options' => $water_volume_units_options],
     ];
-    $form['water_volume']  = $this->buildQuantityField($tank_volume_remaining);
+    $form['water_volume']  = $this->buildQuantityField($water_volume_remaining);
 
     // Area sprayed.
     $area_sprayed_units_options = [
@@ -326,6 +326,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'timestamp' =>  $form_state->getValue('date_start'),
       'status' => $form_state->getValue('status'),
       'flag' => $form_state->getValue('flag'),
+      'notes' => $form_state->getValue('notes'),
     ]);
     
   }
