@@ -110,7 +110,7 @@ class SaatenUnionSpraying extends QuickFormBase {
     ];
 
     // Flags.
-    $flag_options = farm_flag_options('log', []);
+    $flag_options = farm_flag_options('log', 'input');
     $form['flag'] = [
       '#type' => 'select',
       '#title' => $this->t('Flag'),
