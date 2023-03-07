@@ -351,6 +351,8 @@ class SaatenUnionSpraying extends QuickFormBase {
   $quantity_keys = [
     'product_rate', 
     'area',
+    'temperature',
+    'wind_speed',
     'water_volume',
     'total_product_quantity',
     'pressure',
