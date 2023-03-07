@@ -76,14 +76,14 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#description' => $this->t('Log name/description of event.'),
     ];
 
-    $form['date_start'] = [
+    $form['start_date'] = [
       '#type' => 'datetime',
       '#title' => $this->t('Operation start time and date'),
       '#required' => TRUE,
       '#description' => $this->t('The start date and time of the operation.'),
     ];
 
-    $form['date_end'] = [
+    $form['end_date'] = [
       '#type' => 'datetime',
       '#title' => $this->t('Operation finish time and date'),
       '#required' => TRUE,
@@ -319,14 +319,28 @@ class SaatenUnionSpraying extends QuickFormBase {
   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
+  // Quantities.
+  $quantity_keys = ['product_rate', 'total_product_quantity'];
+  $quantities = $this->getQuantities($quantity_keys, $form_state);
+
+  // Notes.
+  $note_fields[] = [
+    'key' => 'notes',
+    'label' => $this->t('Additional notes'),
+  ];
+  $notes = $this->prepareNotes($note_fields, $form_state);
+
   // Input log entity.
   $this->createLog([
       'type' => "input",
       'name' => $form_state->getValue('log_name'),
-      'timestamp' =>  $form_state->getValue('date_start'),
+      'timestamp' => $form_state->getValue('start_date')->getTimestamp(),
       'status' => $form_state->getValue('status'),
       'flag' => $form_state->getValue('flag'),
-      'notes' => $form_state->getValue('notes'),
+      'assigned_to' => $form_state->getValue('assigned_to'),
+      'equipment' => $form_state->getValue('equipment'),
+      'quantity' => $quantities,
+      'notes' => $notes
     ]);
     
   }
@@ -561,4 +575,104 @@ protected function getMaterials(): array {
     return $render;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  protected function prepareNotes(array $note_fields, FormStateInterface $form_state): array {
+    // Prepend additional note fields.
+    array_unshift(
+      $note_fields,
+      ...[
+        [
+          'key' => 'end_date',
+          'label' => $this->t('End Date'),
+        ],
+        [
+          'key' => 'justification_target',
+          'label' => $this->t('Justification/Target'),
+        ],
+        [
+          'key' => 'plant_growth_stage',
+          'label' => $this->t('Plant Growth Stage'),
+        ],
+        [
+          'key' => 'weather',
+          'label' => $this->t('Weather'),
+        ],
+        [
+          'key' => 'wind_direction',
+          'label' => $this->t('Wind direction'),
+        ],
+        [
+          'key' => 'equipment_rinsed',
+          'label' => $this->t('Equipment triple-rinsed'),
+        ],
+        [
+          'key' => 'equipment_clear',
+          'label' => $this->t('Equipment all clear'),
+        ],
+        [
+          'key' => 'equipment_washed',
+          'label' => $this->t('Equipment clear washed'),
+        ],
+      ]
+    );
+
+    // Start an array of note strings.
+    $notes = [];
+
+    // Build note string.
+    foreach ($note_fields as $field_info) {
+      $key = $field_info['key'] ?? NULL;
+      if (!empty($key) && $form_state->hasValue($key) && !$form_state->isValueEmpty($key)) {
+        $note_value = $form_state->getValue($key);
+        // Separate array values with commas.
+        if (is_array($note_value)) {
+          $note_value = implode(', ', $note_value);
+        }
+        $notes[] = $field_info['label'] . ': ' . $note_value;
+      }
+    }
+
+    // Split notes onto separate lines.
+    return [
+      'value' => implode(PHP_EOL, $notes),
+      'format' => 'default',
+    ];
+  }
+
+  /**
+   * Helper function to get quantities to reference in the log quantity field.
+   *
+   * This function should be implemented by quick form subclasses that provide
+   * additional quantities.
+   *
+   * @param array $field_keys
+   *   The quantity form field keys to include.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   *
+   * @return array
+   *   An array of quantity values that will be used to create quantities.
+   *
+   * @see QuickQuantityFieldTrait::buildQuantityField()
+   * @see \Drupal\farm_quick\Traits\QuickQuantityTrait::createQuantity()
+   */
+  protected function getQuantities(array $field_keys, FormStateInterface $form_state): array {
+    $quantities = [];
+
+    // Get quantity values for each group of quantity fields.
+    foreach ($field_keys as $field_key) {
+
+      // Get submitted value.
+      $quantity = $form_state->getValue($field_key);
+
+      // Ensure the quantity is an array and has a numeric value.
+      if (is_array($quantity) && is_numeric($quantity['value'])) {
+        $quantities[] = $quantity;
+      }
+    }
+
+    return $quantities;
+  }
 }
