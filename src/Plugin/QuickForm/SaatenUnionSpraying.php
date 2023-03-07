@@ -408,10 +408,9 @@ class SaatenUnionSpraying extends QuickFormBase {
       'name' => $form_state->getValue('log_name'),
       'timestamp' => $form_state->getValue('start_date')->getTimestamp(),
       'status' => $form_state->getValue('status'),
-      'flag' => $form_state->getValue('flag'),
+      'flag' => array_values($form_state->getValue('flag')),
       'owner' => $form_state->getValue('assigned_to'),
       'equipment' => $form_state->getValue('equipment'),
-      'product' => $form_state->getValue('product'),
       'quantity' => $quantities,
       'notes' => $notes
     ]);
