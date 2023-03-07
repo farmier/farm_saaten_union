@@ -263,6 +263,16 @@ class SaatenUnionSpraying extends QuickFormBase {
       'units' => ['#value' => 'bar'],
     ]);
 
+    $plant_asset_options = $this->getPlantAssetOptions();
+    $form['plant_asset'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Planting asset'),
+      '#description' => $this->t('The plant asset that this log relates to.'),  
+      '#options' => $plant_asset_options,
+      '#required' => TRUE,
+      '#multiple' => TRUE,
+    ];
+
     $equipment_options = $this->getEquipmentOptions();
     $form['equipment'] = [
       '#type' => 'select',
@@ -434,6 +444,36 @@ protected function getMaterials(): array {
 
     return $options;
   }
+
+/**
+ * Helper function to get the labels of active plant assets, sorted alphabetically.
+ *
+ * @return string[]
+ *   An array of plant labels indexed by asset id and sorted alphabetically.
+ */
+protected function getPlantAssetOptions(): array {
+  // Get the entity storage for the 'asset' entity type.
+  $asset_storage = $this->entityTypeManager->getStorage('asset');
+
+  // Query the database for active materials.
+  $asset_query = $asset_storage->getQuery()
+    ->accessCheck(TRUE) // Check the user's access to the materials.
+    ->condition('status', 'active')
+    ->condition('type', 'plant');
+  $asset_ids = $asset_query->execute(); // Execute the query and get the asset IDs.
+
+  // Load the materials and build an array of options.
+  $options = [];
+  if (!empty($asset_ids)) {
+    $plants = $asset_storage->loadMultiple($asset_ids);
+    foreach ($plants as $plant) {
+      $options[$plant->id()] = $plant->label();
+    }
+    asort($options);
+  }
+
+  return $options;
+}
 
   /**
    * Helper function to build a render array for a quantity field.
