@@ -258,7 +258,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'units' => ['#value' => 'bar'],
     ]);
 
-    $equipment_options = $this->getActiveEquipmentOptions();
+    $equipment_options = $this->getEquipmentOptions();
     $form['equipment'] = [
       '#type' => 'select',
       '#title' => $this->t('Equipment'),
@@ -339,6 +339,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'flag' => $form_state->getValue('flag'),
       'assigned_to' => $form_state->getValue('assigned_to'),
       'equipment' => $form_state->getValue('equipment'),
+      'product' => $form_state->getValue('product'),
       'quantity' => $quantities,
       'notes' => $notes
     ]);
@@ -378,7 +379,7 @@ protected function getUserOptions(): array {
 * @return string[]
 *   An array of equipment options indexed by asset id and sorted alphabetically.
 */
-protected function getActiveEquipmentOptions(): array {
+protected function getEquipmentOptions(): array {
   // Query active equipment assets.
   $asset_storage = $this->entityTypeManager->getStorage('asset');
   $asset_ids = $asset_storage->getQuery()
