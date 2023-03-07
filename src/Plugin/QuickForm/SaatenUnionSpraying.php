@@ -228,7 +228,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'title' => $this->t('Temperature (C)'),
       'description' => $this->t('The average temperature during spraying.'),
       'measure' => ['#value' => 'temperature'],
-      'units' => ['#options' => ['c' => 'C']],
+      'units' => ['#options' => ['c' => '°C']],
       'required' => TRUE,
     ]);
 
@@ -350,11 +350,11 @@ class SaatenUnionSpraying extends QuickFormBase {
   // Quantities.
   $quantity_keys = [
     'product_rate', 
-    'area',
-    'temperature',
-    'wind_speed',
-    'water_volume',
     'total_product_quantity',
+    'water_volume',
+    'area',
+    'wind_speed',
+    'temperature',
     'pressure',
     'speed_driven'
   ];
@@ -374,7 +374,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'timestamp' => $form_state->getValue('start_date')->getTimestamp(),
       'status' => $form_state->getValue('status'),
       'flag' => $form_state->getValue('flag'),
-      'assigned_to' => $form_state->getValue('assigned_to'),
+      'owner' => $form_state->getValue('assigned_to'),
       'equipment' => $form_state->getValue('equipment'),
       'product' => $form_state->getValue('product'),
       'quantity' => $quantities,
