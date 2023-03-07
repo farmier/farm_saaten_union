@@ -34,6 +34,13 @@ class SaatenUnionSpraying extends QuickFormBase {
   protected $entityTypeManager;
   
   /**
+   * ID of log type the quick form creates.
+   *
+   * @var string
+   */
+  protected $logType;
+  
+  /**
    * Constructs a QuickFormBase object.
    *
    * @param array $configuration
@@ -102,18 +109,16 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#description' => $this->t('The current status of the job.'),
     ];
 
+    // Flags.
+    $flag_options = farm_flag_options('log', []);
     $form['flag'] = [
       '#type' => 'select',
       '#title' => $this->t('Flag'),
-      '#options' => [
-        'monitor' => $this->t('Monitor'),
-        'priority' => $this->t('Priority'),
-        'needs_review' => $this->t('Needs Review'),
-      ],
+      '#options' => $flag_options,
       '#multiple' => TRUE,
       '#description' => $this->t('Flag this job if it is a priority, requires monitoring or review.'),
     ];
-
+    
     // Users to assign.
     $users = $this->getUserOptions();
     $form['assigned_to'] = [
