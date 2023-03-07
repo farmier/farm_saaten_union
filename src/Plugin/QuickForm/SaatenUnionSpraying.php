@@ -258,12 +258,12 @@ class SaatenUnionSpraying extends QuickFormBase {
       'units' => ['#value' => 'bar'],
     ]);
 
-    $equipments = $this->getActiveEquipmentLabels();
+    $equipment_options = $this->getActiveEquipmentOptions();
     $form['equipment'] = [
       '#type' => 'select',
       '#title' => $this->t('Equipment'),
       '#description' => $this->t('Select the tractor, sprayer and nozzle equipment assets used for this spraying'),  
-      '#options' => $equipments,
+      '#options' => $equipment_options,
       '#required' => TRUE,
       '#multiple' => TRUE,
     ];
@@ -376,9 +376,9 @@ protected function getUserOptions(): array {
 * Helper function to get the labels of active equipment assets, sorted alphabetically.
 *
 * @return string[]
-*   An array of equipment labels indexed by asset id and sorted alphabetically.
+*   An array of equipment options indexed by asset id and sorted alphabetically.
 */
-protected function getActiveEquipmentLabels(): array {
+protected function getActiveEquipmentOptions(): array {
   // Query active equipment assets.
   $asset_storage = $this->entityTypeManager->getStorage('asset');
   $asset_ids = $asset_storage->getQuery()
@@ -391,12 +391,12 @@ protected function getActiveEquipmentLabels(): array {
   $equipments = $asset_storage->loadMultiple($asset_ids);
 
   // Build equipment options.
-  $equipment_labels = array_map(function ($equipment) {
+  $equipment_options = array_map(function ($equipment) {
     return $equipment->label();
   }, $equipments);
-  natcasesort($equipment_labels);
+  natcasesort($equipment_options);
 
-  return $equipment_labels;
+  return $equipment_options;
 }
 
 /**
