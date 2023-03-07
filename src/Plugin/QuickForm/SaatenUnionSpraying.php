@@ -228,7 +228,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'title' => $this->t('Temperature (C)'),
       'description' => $this->t('The average temperature during spraying.'),
       'measure' => ['#value' => 'temperature'],
-      'units' => ['#options' => ['c' => '°C']],
+      'units' => ['#value' => '°C'],
       'required' => TRUE,
     ]);
 
@@ -260,7 +260,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'title' => $this->t('Pressure'),
       'description' => $this->t('The water pressure used when applying the product, where relevant.'),
       'measure' => ['#value' => 'pressure'],
-      'units' => ['#options' => ['bar' => 'bar']],
+      'units' => ['#value' => 'bar'],
     ]);
 
         // Speed driven.
@@ -361,9 +361,44 @@ class SaatenUnionSpraying extends QuickFormBase {
   $quantities = $this->getQuantities($quantity_keys, $form_state);
 
   // Notes.
-  $note_fields[] = [
-    'key' => 'notes',
-    'label' => $this->t('Additional notes'),
+  $note_fields = [
+    // Prepend additional note fields.
+    [
+      'key' => 'end_date',
+      'label' => $this->t('End Date'),
+    ],
+    [
+      'key' => 'justification_target',
+      'label' => $this->t('Justification/Target'),
+    ],
+    [
+      'key' => 'plant_growth_stage',
+      'label' => $this->t('Plant Growth Stage'),
+    ],
+    [
+      'key' => 'weather',
+      'label' => $this->t('Weather'),
+    ],
+    [
+      'key' => 'wind_direction',
+      'label' => $this->t('Wind direction'),
+    ],
+    [
+      'key' => 'equipment_rinsed',
+      'label' => $this->t('Equipment triple-rinsed'),
+    ],
+    [
+      'key' => 'equipment_clear',
+      'label' => $this->t('Equipment all clear'),
+    ],
+    [
+      'key' => 'equipment_washed',
+      'label' => $this->t('Equipment clear washed'),
+    ],
+    [
+      'key' => 'notes',
+      'label' => $this->t('Additional notes'),
+    ],
   ];
   $notes = $this->prepareNotes($note_fields, $form_state);
 
@@ -647,44 +682,6 @@ protected function getPlantAssetOptions(): array {
    * {@inheritdoc}
    */
   protected function prepareNotes(array $note_fields, FormStateInterface $form_state): array {
-    // Prepend additional note fields.
-    array_unshift(
-      $note_fields,
-      ...[
-        [
-          'key' => 'end_date',
-          'label' => $this->t('End Date'),
-        ],
-        [
-          'key' => 'justification_target',
-          'label' => $this->t('Justification/Target'),
-        ],
-        [
-          'key' => 'plant_growth_stage',
-          'label' => $this->t('Plant Growth Stage'),
-        ],
-        [
-          'key' => 'weather',
-          'label' => $this->t('Weather'),
-        ],
-        [
-          'key' => 'wind_direction',
-          'label' => $this->t('Wind direction'),
-        ],
-        [
-          'key' => 'equipment_rinsed',
-          'label' => $this->t('Equipment triple-rinsed'),
-        ],
-        [
-          'key' => 'equipment_clear',
-          'label' => $this->t('Equipment all clear'),
-        ],
-        [
-          'key' => 'equipment_washed',
-          'label' => $this->t('Equipment clear washed'),
-        ],
-      ]
-    );
 
     // Start an array of note strings.
     $notes = [];
