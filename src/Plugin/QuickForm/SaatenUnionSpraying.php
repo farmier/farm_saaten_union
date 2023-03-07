@@ -228,7 +228,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'title' => $this->t('Temperature (C)'),
       'description' => $this->t('The average temperature during spraying.'),
       'measure' => ['#value' => 'temperature'],
-      'units' => ['#value' => 'C'],
+      'units' => ['#options' => ['c' => 'C']],
       'required' => TRUE,
     ]);
 
@@ -260,8 +260,21 @@ class SaatenUnionSpraying extends QuickFormBase {
       'title' => $this->t('Pressure'),
       'description' => $this->t('The water pressure used when applying the product, where relevant.'),
       'measure' => ['#value' => 'pressure'],
-      'units' => ['#value' => 'bar'],
+      'units' => ['#options' => ['bar' => 'bar']],
     ]);
+
+        // Speed driven.
+    $speed_driven_units_options = [
+      'mph' => 'mph',
+      'kmh' => 'km/h',
+    ];
+    $form['speed_driven'] = $this->buildQuantityField([
+      'title' => $this->t('Speed Driven'),
+      'description' => $this->t('The travelling speed when spraying, where relevant.'),
+      'measure' => ['#value' => 'ratio'],
+      'units' => ['#options' => $speed_driven_units_options],
+    ]);
+
 
     $plant_asset_options = $this->getPlantAssetOptions();
     $form['plant_asset'] = [
@@ -335,7 +348,14 @@ class SaatenUnionSpraying extends QuickFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
   // Quantities.
-  $quantity_keys = ['product_rate', 'total_product_quantity'];
+  $quantity_keys = [
+    'product_rate', 
+    'area',
+    'water_volume',
+    'total_product_quantity',
+    'pressure',
+    'speed_driven'
+  ];
   $quantities = $this->getQuantities($quantity_keys, $form_state);
 
   // Notes.
