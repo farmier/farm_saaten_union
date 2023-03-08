@@ -343,67 +343,76 @@ class SaatenUnionSpraying extends QuickFormBase {
   }
 
   /**
-  * Submit handler for Saaten Union Spraying Quick Form.
-  */
+   * Submits the form.
+   *
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    // Quantities.
+    $quantity_keys = [
+      'product_rate', 
+      'total_product_quantity',
+      'water_volume',
+      'area',
+      'wind_speed',
+      'temperature',
+      'pressure',
+      'speed_driven'
+    ];
+    $quantities = $this->getQuantities($quantity_keys, $form_state);
+  
+    // Notes.
+    $note_fields = [
+      // Prepend additional note fields.
+      [
+        'key' => 'end_date',
+        'label' => $this->t('End Date'),
+      ],
+      [
+        'key' => 'justification_target',
+        'label' => $this->t('Justification/Target'),
+      ],
+      [
+        'key' => 'plant_growth_stage',
+        'label' => $this->t('Plant Growth Stage'),
+      ],
+      [
+        'key' => 'weather',
+        'label' => $this->t('Weather'),
+      ],
+      [
+        'key' => 'wind_direction',
+        'label' => $this->t('Wind direction'),
+      ],
+      [
+        'key' => 'equipment_rinsed',
+        'label' => $this->t('Equipment triple-rinsed'),
+      ],
+      [
+        'key' => 'equipment_clear',
+        'label' => $this->t('Equipment all clear'),
+      ],
+      [
+        'key' => 'equipment_washed',
+        'label' => $this->t('Equipment clear washed'),
+      ],
+      [
+        'key' => 'notes',
+        'label' => $this->t('Additional notes'),
+      ],
+    ];
+    $notes = $this->prepareNotes($note_fields, $form_state);
+  
+    // Load asset storage.
+    $asset_storage = $this->entityTypeManager->getStorage('asset');
+    $plant_field = array_values($form_state->getValue('plant_asset'));
+    $plant_assets = $asset_storage->loadMultiple($plant_field);
 
-  // Quantities.
-  $quantity_keys = [
-    'product_rate', 
-    'total_product_quantity',
-    'water_volume',
-    'area',
-    'wind_speed',
-    'temperature',
-    'pressure',
-    'speed_driven'
-  ];
-  $quantities = $this->getQuantities($quantity_keys, $form_state);
-
-  // Notes.
-  $note_fields = [
-    // Prepend additional note fields.
-    [
-      'key' => 'end_date',
-      'label' => $this->t('End Date'),
-    ],
-    [
-      'key' => 'justification_target',
-      'label' => $this->t('Justification/Target'),
-    ],
-    [
-      'key' => 'plant_growth_stage',
-      'label' => $this->t('Plant Growth Stage'),
-    ],
-    [
-      'key' => 'weather',
-      'label' => $this->t('Weather'),
-    ],
-    [
-      'key' => 'wind_direction',
-      'label' => $this->t('Wind direction'),
-    ],
-    [
-      'key' => 'equipment_rinsed',
-      'label' => $this->t('Equipment triple-rinsed'),
-    ],
-    [
-      'key' => 'equipment_clear',
-      'label' => $this->t('Equipment all clear'),
-    ],
-    [
-      'key' => 'equipment_washed',
-      'label' => $this->t('Equipment clear washed'),
-    ],
-    [
-      'key' => 'notes',
-      'label' => $this->t('Additional notes'),
-    ],
-  ];
-  $notes = $this->prepareNotes($note_fields, $form_state);
-
-  // Input log entity.
-  $this->createLog([
+    // Input log entity.
+    $this->createLog([
       'type' => "input",
       'name' => $form_state->getValue('log_name'),
       'timestamp' => $form_state->getValue('start_date')->getTimestamp(),
@@ -412,6 +421,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'owner' => $form_state->getValue('assigned_to'),
       'equipment' => $form_state->getValue('equipment'),
       'quantity' => $quantities,
+      'asset' => $plant_assets,
       'notes' => $notes
     ]);
     
@@ -741,8 +751,7 @@ protected function getPlantAssetOptions(): array {
 
       // Check if the quantity field is related to product rate or total product quantity.
       if ($field_key === 'product_rate' || $field_key === 'total_product_quantity') {
-
-          $quantity['material_type'] = $material_type;
+        $quantity['material_type'] = $material_type;
       }
 
       // Only Total Product Quantity field need these fields.
