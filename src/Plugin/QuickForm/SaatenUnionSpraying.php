@@ -556,7 +556,6 @@ protected function getPlantAssetOptions(): array {
    *   Render array for the quantity field.
    */
   public function buildQuantityField(array $config = []) {
-
     // Default the label to the fieldset title.
     if (!empty($config['title']) && empty($config['label'])) {
       $config['label']['#value'] = (string) $config['title'];
@@ -615,7 +614,7 @@ protected function getPlantAssetOptions(): array {
         'class' => ['inline-quantity', 'container-inline'],
       ],
       '#attached' => [
-        'library' => ['farm_rothamsted_quick/quantity_fieldset'],
+        'library' => ['farm_saaten_union/quantity_fieldset'],
       ],
     ];
 
@@ -693,7 +692,16 @@ protected function getPlantAssetOptions(): array {
   }
 
   /**
-   * {@inheritdoc}
+   * Prepares an array of note strings.
+   * 
+   * @param array $note_fields
+   *  An array of note fields.
+   * @param FormStateInterface $form_state
+   *   The current form state.
+   * 
+   * @return array
+   * An array of note strings, with each string formatted as follows:
+   * "[label]: [value]".
    */
   protected function prepareNotes(array $note_fields, FormStateInterface $form_state): array {
 
@@ -705,15 +713,13 @@ protected function getPlantAssetOptions(): array {
       $key = $field_info['key'] ?? NULL;
       if (!empty($key) && $form_state->hasValue($key) && !$form_state->isValueEmpty($key)) {
         $note_value = $form_state->getValue($key);
-        // Separate array values with commas.
-        if (is_array($note_value)) {
-          $note_value = implode(', ', $note_value);
-        }
+        // If the note value is an array, join its elements with commas.
+        $note_value = is_array($note_value) ? implode(', ', $note_value) : $note_value;
         $notes[] = $field_info['label'] . ': ' . $note_value;
       }
     }
 
-    // Split notes onto separate lines.
+    // Return the array of note strings, with each note string separated by a new line.
     return [
       'value' => implode(PHP_EOL, $notes),
       'format' => 'default',
