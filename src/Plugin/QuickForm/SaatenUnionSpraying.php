@@ -408,8 +408,13 @@ class SaatenUnionSpraying extends QuickFormBase {
   
     // Load asset storage.
     $asset_storage = $this->entityTypeManager->getStorage('asset');
+    $product_field = $form_state->getValue('product');
     $plant_field = array_values($form_state->getValue('plant_asset'));
-    $plant_assets = $asset_storage->loadMultiple($plant_field);
+    $assets = $asset_storage->loadMultiple($plant_field);
+    $product_asset = $asset_storage->load($product_field);
+    if ($product_asset) {
+      $assets[$product_asset->id()] = $product_asset;
+    }
 
     // Input log entity.
     $this->createLog([
@@ -421,7 +426,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'owner' => $form_state->getValue('assigned_to'),
       'equipment' => $form_state->getValue('equipment'),
       'quantity' => $quantities,
-      'asset' => $plant_assets,
+      'asset' => $assets,
       'notes' => $notes
     ]);
     
