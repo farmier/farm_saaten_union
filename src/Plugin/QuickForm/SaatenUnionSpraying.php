@@ -725,11 +725,31 @@ protected function getPlantAssetOptions(): array {
   protected function getQuantities(array $field_keys, FormStateInterface $form_state): array {
     $quantities = [];
 
+    // Load asset storage.
+    $asset_storage = $this->entityTypeManager->getStorage('asset');
+
+    // Get selected material from the form.
+    $material = $asset_storage->load($form_state->getValue('product'));
+
+    // Add material type to the quantity array.
+    $material_type = $material->get('material_type');
+
     // Get quantity values for each group of quantity fields.
     foreach ($field_keys as $field_key) {
 
-      // Get submitted value.
       $quantity = $form_state->getValue($field_key);
+
+      // Check if the quantity field is related to product rate or total product quantity.
+      if ($field_key === 'product_rate' || $field_key === 'total_product_quantity') {
+
+          $quantity['material_type'] = $material_type;
+      }
+
+      // Only Total Product Quantity field need these fields.
+      if ($field_key === 'total_product_quantity') {
+        $quantity['inventory_adjustment'] = 'decrement';
+        $quantity['inventory_asset'] = $material;
+      }
 
       // Ensure the quantity is an array and has a numeric value.
       if (is_array($quantity) && is_numeric($quantity['value'])) {
@@ -739,4 +759,5 @@ protected function getPlantAssetOptions(): array {
 
     return $quantities;
   }
+
 }
