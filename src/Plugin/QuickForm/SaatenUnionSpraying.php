@@ -266,7 +266,7 @@ class SaatenUnionSpraying extends QuickFormBase {
         // Speed driven.
     $speed_driven_units_options = [
       'mph' => 'mph',
-      'kmh' => 'km/h',
+      'km/h' => 'km/h',
     ];
     $form['speed_driven'] = $this->buildQuantityField([
       'title' => $this->t('Speed Driven'),
