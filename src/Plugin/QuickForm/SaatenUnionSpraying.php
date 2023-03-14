@@ -270,7 +270,7 @@ class SaatenUnionSpraying extends QuickFormBase {
     ];
     $form['speed_driven'] = $this->buildQuantityField([
       'title' => $this->t('Speed Driven'),
-      'description' => $this->t('The travelling speed when spraying, where relevant.'),
+      'description' => $this->t('The traveling speed when spraying, where relevant.'),
       'measure' => ['#value' => 'ratio'],
       'units' => ['#options' => $speed_driven_units_options],
     ]);
