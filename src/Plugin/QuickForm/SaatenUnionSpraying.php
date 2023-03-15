@@ -166,6 +166,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'description' => $this->t('The total amount of water required to cover the field area(s).'),
       'measure' => ['#value' => 'volume'],
       'units' => ['#value' => 'l'],
+      'required' => TRUE,
     ];
     $form['water_volume']  = $this->buildQuantityField($water_volume);
 
