@@ -257,6 +257,12 @@ class SaatenUnionSpraying extends QuickFormBase {
       'units' => ['#value' => 'km/h'],
     ]);
 
+    // Nozzle type.
+    $form['nozzle_type'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Nozzle type'),
+      '#description' => $this->t('The type of spray nozzle used, where relevant'),
+    ];
 
     $plant_asset_options = $this->getPlantAssetOptions();
     $form['plant_asset'] = [
@@ -352,6 +358,10 @@ class SaatenUnionSpraying extends QuickFormBase {
       [
         'key' => 'end_date',
         'label' => $this->t('End Date'),
+      ],
+      [
+        'key' => 'nozzle_type',
+        'label' => $this->t('Nozzle type'),
       ],
       [
         'key' => 'justification_target',
