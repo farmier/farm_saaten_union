@@ -2,6 +2,7 @@
 
 namespace Drupal\farm_saaten_union\Plugin\QuickForm;
 
+use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\farm_quick\Plugin\QuickForm\QuickFormBase;
 use Drupal\farm_quick\Traits\QuickLogTrait;
@@ -81,6 +82,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#title' => $this->t('Operation start time and date'),
       '#required' => TRUE,
       '#description' => $this->t('The start date and time of the operation.'),
+      '#default_value' => new DrupalDateTime('midnight'),
     ];
 
     $form['end_date'] = [
