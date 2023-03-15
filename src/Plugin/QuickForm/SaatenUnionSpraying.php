@@ -152,7 +152,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'description' => $this->t('The total amount of product required to cover the field area(s).'),
       'required' => TRUE,
       'type' => ['#value' => 'material'],
-      'measure' => ['#value' => 'rate'],
+      'measure' => ['#value' => ''],
       'units' => ['#options' => [
         'l' => 'l',
         'kg' => 'kg',
