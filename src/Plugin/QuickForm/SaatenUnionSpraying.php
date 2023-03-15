@@ -113,7 +113,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#multiple' => TRUE,
       '#description' => $this->t('Flag this job if it is a priority, requires monitoring or review.'),
     ];
-    
+
     // Users to assign.
     $users = $this->getUserOptions();
     $form['assigned_to'] = [
@@ -262,7 +262,7 @@ class SaatenUnionSpraying extends QuickFormBase {
     $form['plant_asset'] = [
       '#type' => 'select',
       '#title' => $this->t('Planting asset'),
-      '#description' => $this->t('The plant asset that this log relates to.'),  
+      '#description' => $this->t('The plant asset that this log relates to.'),
       '#options' => $plant_asset_options,
       '#required' => TRUE,
       '#multiple' => TRUE,
@@ -272,7 +272,7 @@ class SaatenUnionSpraying extends QuickFormBase {
     $form['equipment'] = [
       '#type' => 'select',
       '#title' => $this->t('Equipment'),
-      '#description' => $this->t('Select the tractor, sprayer and nozzle equipment assets used for this spraying'),  
+      '#description' => $this->t('Select the tractor, sprayer and nozzle equipment assets used for this spraying'),
       '#options' => $equipment_options,
       '#required' => TRUE,
       '#multiple' => TRUE,
@@ -320,7 +320,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#description' => $this->t('Any additional notes.'),
       '#weight' => 20,
     ];
-    
+
     return $form;
   }
 
@@ -335,7 +335,7 @@ class SaatenUnionSpraying extends QuickFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Quantities.
     $quantity_keys = [
-      'product_rate', 
+      'product_rate',
       'total_product_quantity',
       'water_volume',
       'area',
@@ -345,7 +345,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'speed_driven'
     ];
     $quantities = $this->getQuantities($quantity_keys, $form_state);
-  
+
     // Notes.
     $note_fields = [
       // Prepend additional note fields.
@@ -387,7 +387,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       ],
     ];
     $notes = $this->prepareNotes($note_fields, $form_state);
-  
+
     // Load asset storage.
     $asset_storage = $this->entityTypeManager->getStorage('asset');
     $product_field = $form_state->getValue('product');
@@ -411,7 +411,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'asset' => $assets,
       'notes' => $notes
     ]);
-    
+
   }
 
 /**
@@ -675,12 +675,12 @@ protected function getPlantAssetOptions(): array {
 
   /**
    * Prepares an array of note strings.
-   * 
+   *
    * @param array $note_fields
    *  An array of note fields.
    * @param FormStateInterface $form_state
    *   The current form state.
-   * 
+   *
    * @return array
    * An array of note strings, with each string formatted as follows:
    * "[label]: [value]".
