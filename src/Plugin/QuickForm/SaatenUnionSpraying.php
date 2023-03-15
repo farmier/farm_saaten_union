@@ -183,7 +183,7 @@ class SaatenUnionSpraying extends QuickFormBase {
     $wind_speed = [
       'title' => $this->t('Wind speed'),
       'description' => $this->t('The maximum wind speed during spraying.'),
-      'measure' => ['#value' => 'ratio'],
+      'measure' => ['#value' => ''],
       'units' => ['#value' => 'km/h'],
       'required' => TRUE,
     ];
@@ -253,7 +253,7 @@ class SaatenUnionSpraying extends QuickFormBase {
     $form['speed_driven'] = $this->buildQuantityField([
       'title' => $this->t('Speed Driven'),
       'description' => $this->t('The traveling speed when spraying, where relevant.'),
-      'measure' => ['#value' => 'ratio'],
+      'measure' => ['#value' => ''],
       'units' => ['#value' => 'km/h'],
     ]);
 
