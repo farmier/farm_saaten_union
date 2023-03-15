@@ -32,14 +32,7 @@ class SaatenUnionSpraying extends QuickFormBase {
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
-  
-  /**
-   * ID of log type the quick form creates.
-   *
-   * @var string
-   */
-  protected $logType;
-  
+
   /**
    * Constructs a QuickFormBase object.
    *
