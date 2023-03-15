@@ -123,6 +123,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#multiple' => TRUE,
       '#required' => TRUE,
       '#description' => $this->t('The operator(s) who carried out the task.'),
+      '#default_value' => \Drupal::currentUser()->id(),
     ];
 
     $materials = $this->getMaterials();
