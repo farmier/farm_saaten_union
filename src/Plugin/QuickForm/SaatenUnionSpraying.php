@@ -135,19 +135,16 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#description' => $this->t('The product used.'),
     ];
 
-    // Product units
-    $product_units_options = [
-      'l' => 'l',
-      'kg/ha' => 'kg/ha',
-      'ml' => 'ml'
-    ];
     $form['product_rate'] = $this->buildQuantityField([
       'title' => $this->t('Product Rate'),
       'description' => $this->t('The rate the product is applied per unit area.'),
       'required' => TRUE,
       'type' => ['#value' => 'material'],
       'measure' => ['#value' => 'rate'],
-      'units' => ['#options' => $product_units_options],
+      'units' => ['#options' => [
+        'l/ha' => 'l/ha',
+        'kg/ha' => 'kg/ha',
+      ]],
     ]);
 
     $form['total_product_quantity'] = $this->buildQuantityField([
@@ -156,45 +153,37 @@ class SaatenUnionSpraying extends QuickFormBase {
       'required' => TRUE,
       'type' => ['#value' => 'material'],
       'measure' => ['#value' => 'rate'],
-      'units' => ['#options' => $product_units_options],
+      'units' => ['#options' => [
+        'l' => 'l',
+        'kg' => 'kg',
+        'ml' => 'ml'
+      ]],
     ]);
 
-    // Water Volume remaining.
-    $water_volume_units_options = [
-      'l' => 'l',
-      'gal' => 'gal',
-    ];
-    $water_volume_remaining = [
+    // Water Volume.
+    $water_volume = [
       'title' => $this->t('Water Volume'),
       'description' => $this->t('The total amount of water required to cover the field area(s).'),
       'measure' => ['#value' => 'volume'],
-      'units' => ['#options' => $water_volume_units_options],
+      'units' => ['#value' => 'l'],
     ];
-    $form['water_volume']  = $this->buildQuantityField($water_volume_remaining);
+    $form['water_volume']  = $this->buildQuantityField($water_volume);
 
     // Area sprayed.
-    $area_sprayed_units_options = [
-      'm2' => 'm2',
-      'ha' => 'ha',
-    ];
     $area_sprayed = [
       'title' => $this->t('Area sprayed'),
       'description' => $this->t('The total area being sprayed.'),
       'measure' => ['#value' => 'area'],
-      'units' => ['#options' => $area_sprayed_units_options],
+      'units' => ['#value' => 'ha'],
     ];
     $form['area'] = $this->buildQuantityField($area_sprayed);
 
     // Wind speed.
-    $wind_speed_units_options = [
-      'kph' => 'kph',
-      'mph' => 'mph',
-    ];
     $wind_speed = [
       'title' => $this->t('Wind speed'),
       'description' => $this->t('The maximum wind speed during spraying.'),
       'measure' => ['#value' => 'ratio'],
-      'units' => ['#options' => $wind_speed_units_options],
+      'units' => ['#value' => 'km/h'],
       'required' => TRUE,
     ];
     $form['wind_speed'] = $this->buildQuantityField($wind_speed);
@@ -259,16 +248,12 @@ class SaatenUnionSpraying extends QuickFormBase {
       'units' => ['#value' => 'bar'],
     ]);
 
-        // Speed driven.
-    $speed_driven_units_options = [
-      'mph' => 'mph',
-      'km/h' => 'km/h',
-    ];
+    // Speed driven.
     $form['speed_driven'] = $this->buildQuantityField([
       'title' => $this->t('Speed Driven'),
       'description' => $this->t('The traveling speed when spraying, where relevant.'),
       'measure' => ['#value' => 'ratio'],
-      'units' => ['#options' => $speed_driven_units_options],
+      'units' => ['#value' => 'km/h'],
     ]);
 
 
