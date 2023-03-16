@@ -1,0 +1,9 @@
+{
+  "name": "farmier/farm_saaten_union",
+  "description": "farmOS integration with Saaten Union Research.",
+  "type": "drupal-module",
+  "require": {
+    "farmos/farmos": "^2.0"
+  }
+}
+
