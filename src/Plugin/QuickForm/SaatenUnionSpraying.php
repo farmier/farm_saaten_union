@@ -133,6 +133,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#options' => $materials,
       '#required' => TRUE,
       '#description' => $this->t('The product used.'),
+      '#multiple' => TRUE,
     ];
 
     $form['product_rate'] = $this->buildQuantityField([
@@ -733,38 +734,66 @@ protected function getPlantAssetOptions(): array {
   protected function getQuantities(array $field_keys, FormStateInterface $form_state): array {
     $quantities = [];
 
-    // Load asset storage.
-    $asset_storage = $this->entityTypeManager->getStorage('asset');
-
-    // Get selected material from the form.
-    $material = $asset_storage->load($form_state->getValue('product'));
-
-    // Add material type to the quantity array.
-    $material_type = $material->get('material_type');
-
     // Get quantity values for each group of quantity fields.
     foreach ($field_keys as $field_key) {
-
       $quantity = $form_state->getValue($field_key);
 
       // Check if the quantity field is related to product rate or total product quantity.
       if ($field_key === 'product_rate' || $field_key === 'total_product_quantity') {
+        $product_quantities = $this->getProductQuantities($field_key, $form_state);
+        $quantities = array_merge($quantities, $product_quantities);
+      } else {
+        // Ensure the quantity is an array and has a numeric value.
+        if (is_array($quantity) && is_numeric($quantity['value'])) {
+          $quantities[] = $quantity;
+        }
+      }
+    }
+    
+    return $quantities;
+  }
+
+  /**
+   * Retrieves an array of product quantities based on selected materials.
+   *
+   * @param string $product
+   *   The key of the product field.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current form state object.
+   *
+   * @return array
+   *   An array of product quantities.
+   */
+  protected function getProductQuantities(string $product, FormStateInterface $form_state): array {
+    $products = [];
+
+    // Load asset storage.
+    $asset_storage = $this->entityTypeManager->getStorage('asset');
+
+    // Get selected material from the form.
+    $product_field_values = array_values($form_state->getValue('product'));
+    $materials = $asset_storage->loadMultiple($product_field_values);
+
+    foreach ($materials as $material) {
+      $quantity = $form_state->getValue($product);
+
+      // Check if the quantity field is related to product rate or total product quantity.
+      if ($product === 'product_rate' || $product === 'total_product_quantity') {
+        $material_type = $material->get('material_type');
         $quantity['material_type'] = $material_type;
       }
 
       // Only Total Product Quantity field need these fields.
-      if ($field_key === 'total_product_quantity') {
+      if ($product === 'total_product_quantity') {
         $quantity['inventory_adjustment'] = 'decrement';
         $quantity['inventory_asset'] = $material;
       }
 
-      // Ensure the quantity is an array and has a numeric value.
-      if (is_array($quantity) && is_numeric($quantity['value'])) {
-        $quantities[] = $quantity;
-      }
+      $products[] = $quantity;
     }
-
-    return $quantities;
+    
+    return $products;
   }
+
 
 }
