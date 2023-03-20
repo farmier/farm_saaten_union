@@ -742,25 +742,37 @@ protected function getPlantAssetOptions(): array {
       if ($field_key === 'product_rate' || $field_key === 'total_product_quantity') {
         $product_quantities = $this->getProductQuantities($field_key, $form_state);
         $quantities = array_merge($quantities, $product_quantities);
+  
+        // Sort the quantities by material type label using a custom function.
+        usort($quantities, [$this, 'sortQuantities']);
         
-        // Sort the quantities by material type label.
-        usort($quantities, function($a, $b) {
-          $material1 = $a['material_type']->entity->label();
-          $material2 = $b['material_type']->entity->label();
-          $sortMaterials = strcmp($material1, $material2);
-
-          return $sortMaterials;
-        });
-      } else {
-        // Ensure the quantity is an array and has a numeric value.
-        if (is_array($quantity) && is_numeric($quantity['value'])) {
-          $quantities[] = $quantity;
-        }
+      } elseif (is_array($quantity) && is_numeric($quantity['value'])) {
+        // If the quantity is an array and has a numeric value, add it to the quantities array.
+        $quantities[] = $quantity;
       }
     }
 
     return $quantities;
   }
+
+/**
+ * Sorting the quantities array.
+ *
+ * @param array $a
+ *   An array of quantity values.
+ * @param array $b
+ *   An array of quantity values.
+ *
+ * @return int
+ *   Returns -1, 0, or 1 based on the comparison of the material type labels.
+ */
+protected function sortQuantities(array $a, array $b): int {
+  $material1 = $a['material_type']->entity->label();
+  $material2 = $b['material_type']->entity->label();
+
+  // Compare the material type labels and return the result.
+  return strcmp($material1, $material2);
+}
 
   /**
    * Retrieves an array of product quantities based on selected materials.
