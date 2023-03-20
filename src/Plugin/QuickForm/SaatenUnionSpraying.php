@@ -742,6 +742,15 @@ protected function getPlantAssetOptions(): array {
       if ($field_key === 'product_rate' || $field_key === 'total_product_quantity') {
         $product_quantities = $this->getProductQuantities($field_key, $form_state);
         $quantities = array_merge($quantities, $product_quantities);
+        
+        // Sort the quantities by material type label.
+        usort($quantities, function($a, $b) {
+          $material1 = $a['material_type']->entity->label();
+          $material2 = $b['material_type']->entity->label();
+          $sortMaterials = strcmp($material1, $material2);
+
+          return $sortMaterials;
+        });
       } else {
         // Ensure the quantity is an array and has a numeric value.
         if (is_array($quantity) && is_numeric($quantity['value'])) {
@@ -749,7 +758,7 @@ protected function getPlantAssetOptions(): array {
         }
       }
     }
-    
+
     return $quantities;
   }
 
@@ -794,6 +803,5 @@ protected function getPlantAssetOptions(): array {
     
     return $products;
   }
-
 
 }
