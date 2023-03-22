@@ -126,39 +126,74 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#default_value' => \Drupal::currentUser()->id(),
     ];
 
-    $materials = $this->getMaterials();
-    $form['product'] = [
+    # Number of products.
+    $range = range(1, 10);
+    $form['product_count'] = [
       '#type' => 'select',
-      '#title' => $this->t('Product'),
-      '#options' => $materials,
-      '#required' => TRUE,
-      '#description' => $this->t('The product used.'),
+      '#title' => $this->t('How many products were applied?'),
+      '#options' => array_combine($range, $range),
+      '#default_value' => 1,
+      '#ajax' => [
+        'callback' => [$this, 'productsCallback'],
+        'wrapper' => 'products',
+      ],
     ];
 
-    $form['product_rate'] = $this->buildQuantityField([
-      'title' => $this->t('Product Rate'),
-      'description' => $this->t('The rate the product is applied per unit area.'),
-      'required' => TRUE,
-      'type' => ['#value' => 'material'],
-      'measure' => ['#value' => 'rate'],
-      'units' => ['#options' => [
-        'l/ha' => 'l/ha',
-        'kg/ha' => 'kg/ha',
-      ]],
-    ]);
+    // Create a container for products.
+    $form['products'] = [
+      '#type' => 'container',
+      '#tree' => TRUE,
+      '#attributes' => ['id' => 'products'],
+    ];
 
-    $form['total_product_quantity'] = $this->buildQuantityField([
-      'title' => $this->t('Total Product Quantity'),
-      'description' => $this->t('The total amount of product required to cover the field area(s).'),
-      'required' => TRUE,
-      'type' => ['#value' => 'material'],
-      'measure' => ['#value' => ''],
-      'units' => ['#options' => [
-        'l' => 'l',
-        'kg' => 'kg',
-        'ml' => 'ml'
-      ]],
-    ]);
+    // Create a fieldset for each set of product information.
+    $product_count = $form_state->getValue('product_count', 1);
+    for ($i = 0; $i < $product_count; $i++) {
+      $counter = ' ' . ($i + 1);
+      $form['products'][$i] = [
+        '#type' => 'details',
+        '#title' => $this->t('Product') . $counter,
+        '#open' => TRUE,
+      ];
+
+      $materials = $this->getMaterials();
+      $form['products'][$i]['product'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Product'),
+        '#options' => $materials,
+        '#required' => TRUE,
+        '#description' => $this->t('The product used.'),
+      ];
+
+      $form['products'][$i]['product_rate'] = $this->buildQuantityField([
+        'title' => $this->t('Product Rate'),
+        'description' => $this->t('The rate the product is applied per unit area.'),
+        'required' => TRUE,
+        'type' => ['#value' => 'material'],
+        'measure' => ['#value' => 'rate'],
+        'units' => [
+          '#options' => [
+            'l/ha' => 'l/ha',
+            'kg/ha' => 'kg/ha',
+          ]
+        ],
+      ]);
+
+      $form['products'][$i]['total_product_quantity'] = $this->buildQuantityField([
+        'title' => $this->t('Total Product Quantity'),
+        'description' => $this->t('The total amount of product required to cover the field area(s).'),
+        'required' => TRUE,
+        'type' => ['#value' => 'material'],
+        'measure' => ['#value' => ''],
+        'units' => [
+          '#options' => [
+            'l' => 'l',
+            'kg' => 'kg',
+            'ml' => 'ml'
+          ]
+        ],
+      ]);
+    }
 
     // Water Volume.
     $water_volume = [
@@ -339,10 +374,46 @@ class SaatenUnionSpraying extends QuickFormBase {
    *   The current state of the form.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // Quantities.
+
+    // Load asset storage.
+    $asset_storage = $this->entityTypeManager->getStorage('asset');
+
+    // Build product quantities.
+    $product_quantities = [];
+    foreach ($form_state->getValue('products') as $product) {
+
+      // Get selected material asset from the form.
+      $material = $asset_storage->load($product['product']);
+
+      // Get the material type.
+      $material_type = $material->get('material_type');
+
+      // Iterate over the product quantity fields and build quantities.
+      $product_quantity_keys = [
+        'product_rate',
+        'total_product_quantity',
+      ];
+      foreach ($product_quantity_keys as $field_key) {
+        $quantity = $product[$field_key];
+
+        // Add the material type.
+        $quantity['material_type'] = $material_type;
+
+        // Decrement the material asset inventory by the total quantity used.
+        if ($field_key === 'total_product_quantity') {
+          $quantity['inventory_adjustment'] = 'decrement';
+          $quantity['inventory_asset'] = $material;
+        }
+
+        if (is_array($quantity) && is_numeric($quantity['value'])) {
+          $product_quantities[] = $quantity;
+        }
+      }
+    }
+
+    // Build other quantities.
+    $other_quantities = [];
     $quantity_keys = [
-      'product_rate',
-      'total_product_quantity',
       'water_volume',
       'area',
       'wind_speed',
@@ -350,7 +421,12 @@ class SaatenUnionSpraying extends QuickFormBase {
       'pressure',
       'speed_driven'
     ];
-    $quantities = $this->getQuantities($quantity_keys, $form_state);
+    foreach ($quantity_keys as $field_key) {
+      $quantity = $form_state->getValue($field_key);
+      if (is_array($quantity) && is_numeric($quantity['value'])) {
+        $other_quantities[] = $quantity;
+      }
+    }
 
     // Notes.
     $note_fields = [
@@ -412,7 +488,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'flag' => array_values($form_state->getValue('flag')),
       'owner' => $form_state->getValue('assigned_to'),
       'equipment' => $form_state->getValue('equipment'),
-      'quantity' => $quantities,
+      'quantity' => array_merge($product_quantities, $other_quantities),
       'asset' => $assets,
       'notes' => $notes
     ]);
@@ -714,57 +790,10 @@ protected function getPlantAssetOptions(): array {
   }
 
   /**
-   * Helper function to get quantities to reference in the log quantity field.
-   *
-   * This function should be implemented by quick form subclasses that provide
-   * additional quantities.
-   *
-   * @param array $field_keys
-   *   The quantity form field keys to include.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The form state.
-   *
-   * @return array
-   *   An array of quantity values that will be used to create quantities.
-   *
-   * @see QuickQuantityFieldTrait::buildQuantityField()
-   * @see \Drupal\farm_quick\Traits\QuickQuantityTrait::createQuantity()
+   * Ajax callback for products fields.
    */
-  protected function getQuantities(array $field_keys, FormStateInterface $form_state): array {
-    $quantities = [];
-
-    // Load asset storage.
-    $asset_storage = $this->entityTypeManager->getStorage('asset');
-
-    // Get selected material from the form.
-    $material = $asset_storage->load($form_state->getValue('product'));
-
-    // Add material type to the quantity array.
-    $material_type = $material->get('material_type');
-
-    // Get quantity values for each group of quantity fields.
-    foreach ($field_keys as $field_key) {
-
-      $quantity = $form_state->getValue($field_key);
-
-      // Check if the quantity field is related to product rate or total product quantity.
-      if ($field_key === 'product_rate' || $field_key === 'total_product_quantity') {
-        $quantity['material_type'] = $material_type;
-      }
-
-      // Only Total Product Quantity field need these fields.
-      if ($field_key === 'total_product_quantity') {
-        $quantity['inventory_adjustment'] = 'decrement';
-        $quantity['inventory_asset'] = $material;
-      }
-
-      // Ensure the quantity is an array and has a numeric value.
-      if (is_array($quantity) && is_numeric($quantity['value'])) {
-        $quantities[] = $quantity;
-      }
-    }
-
-    return $quantities;
+  public function productsCallback(array $form, FormStateInterface $form_state) {
+    return $form['products'];
   }
 
 }
