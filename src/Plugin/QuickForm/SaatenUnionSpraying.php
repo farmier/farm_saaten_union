@@ -299,6 +299,23 @@ class SaatenUnionSpraying extends QuickFormBase {
       '#description' => $this->t('The type of spray nozzle used, where relevant'),
     ];
 
+    $form['location'] = [
+      '#type' => 'entity_autocomplete',
+      '#title' => $this->t('Location'),
+      '#description' => $this->t('The location of this spraying event.'),
+      '#target_type' => 'asset',
+      '#selection_handler' => 'views',
+      '#selection_settings' => [
+        'view' => [
+          'view_name' => 'farm_location_reference',
+          'display_name' => 'entity_reference',
+          'arguments' => [],
+        ],
+        'match_operator' => 'CONTAINS',
+      ],
+      '#required' => TRUE,
+    ];
+
     $plant_asset_options = $this->getPlantAssetOptions();
     $form['plant_asset'] = [
       '#type' => 'select',
@@ -478,6 +495,8 @@ class SaatenUnionSpraying extends QuickFormBase {
     $asset_storage = $this->entityTypeManager->getStorage('asset');
     $plant_field = array_values($form_state->getValue('plant_asset'));
     $assets = $asset_storage->loadMultiple($plant_field);
+    $location_field = array_values($form_state->getValue('location'));
+    $locations = $asset_storage->loadMultiple($location_field);
 
     // Input log entity.
     $this->createLog([
@@ -490,6 +509,7 @@ class SaatenUnionSpraying extends QuickFormBase {
       'equipment' => $form_state->getValue('equipment'),
       'quantity' => array_merge($product_quantities, $other_quantities),
       'asset' => $assets,
+      'location' => $locations,
       'notes' => $notes
     ]);
 
