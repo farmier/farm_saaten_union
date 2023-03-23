@@ -313,6 +313,8 @@ class SaatenUnionSpraying extends QuickFormBase {
         ],
         'match_operator' => 'CONTAINS',
       ],
+      '#tags' => TRUE,
+      '#maxlength' => 1024,
       '#required' => TRUE,
     ];
 
@@ -494,8 +496,14 @@ class SaatenUnionSpraying extends QuickFormBase {
     $asset_storage = $this->entityTypeManager->getStorage('asset');
     $plant_field = array_values($form_state->getValue('plant_asset'));
     $assets = $asset_storage->loadMultiple($plant_field);
-    $location_field = array_values($form_state->getValue('location'));
-    $locations = $asset_storage->loadMultiple($location_field);
+    $locations = [];
+    if (!empty($form_state->getValue('location'))) {
+      foreach ($form_state->getValue('location') as $value) {
+        if (!empty($value['target_id'])) {
+          $locations[] = $asset_storage->load($value['target_id']);
+        }
+      }
+    }
 
     // Input log entity.
     $this->createLog([
