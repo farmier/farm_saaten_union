@@ -319,10 +319,9 @@ class SaatenUnionSpraying extends QuickFormBase {
     $plant_asset_options = $this->getPlantAssetOptions();
     $form['plant_asset'] = [
       '#type' => 'select',
-      '#title' => $this->t('Planting asset'),
+      '#title' => $this->t('Plant asset'),
       '#description' => $this->t('The plant asset that this log relates to.'),
       '#options' => $plant_asset_options,
-      '#required' => TRUE,
       '#multiple' => TRUE,
     ];
 
