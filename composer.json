@@ -3,7 +3,7 @@
   "description": "farmOS integration with Saaten Union Research.",
   "type": "drupal-module",
   "require": {
-    "farmos/farmos": "^2.0"
+    "farmos/farmos": "^2 || ^3"
   }
 }
 
