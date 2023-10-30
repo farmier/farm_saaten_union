@@ -2,7 +2,7 @@ name: farmOS Saaten Union
 type: module
 description: farmOS integration with Saaten Union Research.
 package: farmOS Contrib
-core_version_requirement: ^9
+core_version_requirement: ^9 || ^10
 dependencies:
   - farm_quick
   - farm_input
